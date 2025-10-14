@@ -9,7 +9,7 @@ contract InsuranceFundraising{
     uint public startTime;          // fundraising has started
     uint public totalMinimumGoal;   // is the minimum amount of bonds that need to be sold to make the fundraising successful
     uint public minimumAmount;      // minimum amount of Bonds purchased per investor
-    uint public bondPrice;          // price of each bond
+    uint public bondPrice;          // price of a single bond
     uint public maxBonds;           // how many bonds can be sold in total
     uint public bondsSold;          // how many bonds are already sold
     uint public deadline;           // deadline for the fundraising
