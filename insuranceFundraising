@@ -76,7 +76,7 @@ contract InsuranceFundraising{
         require(bondsSold + _amount <= maxBonds, "Maximum number of bonds reached.");
         bondsSold += _amount;
         owner.transfer(totalCost);
-        bondHolders[msg.sender] += _amount;             // add to bond Holder´s address to see how many funds he has
+        bondHolders[msg.sender] += _amount;             // add to bond Holder´s address to see how many bonds he has
         emit BondPurchased(msg.sender, _amount);
     }
 
