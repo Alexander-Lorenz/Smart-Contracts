@@ -19,7 +19,7 @@ contract InsuranceFundraising{
 
 // Events
     event FundraisingStarted(address insurer, uint goal, uint startTime, uint deadline);
-    event FundraisingEnded(uint totalRaised);
+    event FundraisingEnded(uint bondsSold);
     event FundraisingFailed();  // kann in unserem Projekt das fundraising überhaupt failen???
     event FundraisingSuccessful(uint totalRaised);
     event BondPurchased(address indexed investor, uint amount); // folie 189
