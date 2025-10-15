@@ -18,7 +18,7 @@ contract InsuranceFundraising{
 
 
 // Events
-    event FundraisingStarted(address insurer, uint goal, uint startTime, uint deadline);
+    event FundraisingStarted(address indexed insurer, uint goal, uint startTime, uint deadline);
     event FundraisingEnded(uint bondsSold);
     event FundraisingFailed();  // kann in unserem Projekt das fundraising überhaupt failen??? Alex: wir können das als theoretischen Fall reinnehmen würde ich sagen
     event FundraisingSuccessful(uint totalRaised);
