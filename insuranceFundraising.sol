@@ -70,7 +70,7 @@ contract InsuranceFundraising{
         require(block.timestamp >= startTime, "Fundraising hasn't started yet.");
         require(block.timestamp < deadline, "Fundraising has ended.");
         require(_amount >= minimumAmount, "Amount must be greater (or equal) than minimum amount.");
-        require(bondsSold < maxBonds, "Fundraising goal already reached.");    // noch eins, dass bondsSold + amount < maxBonds ist
+        require(bondsSold < maxBonds, "Fundraising goal already reached.");    
         uint totalCost = _amount * bondPrice;
         require(msg.value == totalCost, "Incorrect amount of ETH sent.");
         require(bondsSold + _amount <= maxBonds, "Maximum number of bonds reached.");
