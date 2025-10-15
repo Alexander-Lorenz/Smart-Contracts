@@ -85,7 +85,8 @@ contract InsuranceFundraising{
 
         if (bondsSold >= totalMinimumGoal) {
             emit FundraisingSuccessful(bondsSold);
-        } else {
+        }
+        else {
             emit FundraisingFailed();
         }
 
