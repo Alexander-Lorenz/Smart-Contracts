@@ -21,7 +21,7 @@ contract InsuranceFundraising{
     event FundraisingStarted(address indexed insurer, uint goal, uint startTime, uint deadline);
     event FundraisingEnded(uint bondsSold);
     event FundraisingFailed();  // kann in unserem Projekt das fundraising überhaupt failen??? Alex: wir können das als theoretischen Fall reinnehmen würde ich sagen
-    event FundraisingSuccessful(uint totalRaised);
+    event FundraisingSuccessful(uint bondsSold);
     event BondPurchased(address indexed investor, uint amount); // folie 189
     event FundsWithdrawn(address indexed insurer, uint amount);
    // noch eins für extended deadline??
