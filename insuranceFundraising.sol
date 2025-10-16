@@ -75,7 +75,7 @@ contract InsuranceFundraising{
         require(msg.value == totalCost, "Incorrect amount of ETH sent.");
         require(bondsSold + _amount <= maxBonds, "Maximum number of bonds reached.");
         bondsSold += _amount;
-        owner.transfer(totalCost);
+        owner.transfer(totalCost);        // so wäre geld direkt bei owner, sollte vielleicht nicht so sein wenn fundraising scheitert
         bondHolders[msg.sender] += _amount;             // add to bondholder´s address to see how many bonds he has
         emit BondPurchased(msg.sender, _amount);
     }
