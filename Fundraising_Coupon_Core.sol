@@ -69,6 +69,7 @@ contract InsuranceFundraising {
     event ContractMatured(uint256 totalPayout);
 
     constructor(
+        address payable _owner,
         uint _minimumAmount,
         uint _bondPrice,
         uint _maxBonds,
@@ -78,7 +79,7 @@ contract InsuranceFundraising {
         uint _yieldRateBasisPoints,     // yield per quarter in basis points (e.g., 200 = 2%)
         uint _riskPremiumBasisPoints    // risk premium per quarter (e.g., 150 = 1.5%)
     ) {
-        owner = payable(msg.sender);
+        owner = _owner;
         startTime = block.timestamp;
         minimumAmount = _minimumAmount;
         totalMinimumGoal = _totalMinimumGoal;
@@ -276,6 +277,7 @@ contract CatBondFactory {
     ) external returns (uint256 bondId, address bondAddress) {
         // Deployer (msg.sender) will be the owner inside InsuranceFundraising constructor
         InsuranceFundraising bond = new InsuranceFundraising(
+            payable(msg.sender),
             _minimumAmount,
             _bondPrice,
             _maxBonds,
