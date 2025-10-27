@@ -24,6 +24,44 @@ contract MockYieldToken {
 }
 
 
+/* -----------------------------------------------------------
+ *                         Oracle
+ * ----------------------------------------------------------- */
+interface IWindOracle {
+    function lastReading() external view returns (uint256);
+    function lastUpdatedAt() external view returns (uint256);
+}
+
+contract SimpleWindOracle is IWindOracle {
+    address public owner;
+    uint256 public override lastReading;
+    uint256 public override lastUpdatedAt;
+
+    event Updated(uint256 reading, uint256 timestamp);
+    event OwnerChanged(address indexed prev, address indexed next);
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    function setReading(uint256 reading) external onlyOwner {
+        lastReading = reading;
+        lastUpdatedAt = block.timestamp;
+        emit Updated(reading, block.timestamp);
+    }
+
+    function setOwner(address next) external onlyOwner {
+        require(next != address(0), "zero");
+        emit OwnerChanged(owner, next);
+        owner = next;
+    }
+}
+
 // ------------------------------------
 // Parametric Cat Bond Prototype
 // ------------------------------------
@@ -41,6 +79,10 @@ contract InsuranceFundraising {
     bool public triggerActivated = false;
     bool public fundsInvested = false;
     bool public contractEnded = false;
+
+    // Oracle wiring
+    IWindOracle public oracle;
+    uint256 public maxDataAgeSeconds; // e.g., 30 minutes
 
     // Configurable parameters
     uint public yieldRate;               // e.g. 200 = 2.00% per quarter (basis points)
@@ -64,12 +106,15 @@ contract InsuranceFundraising {
     event BondPurchased(address indexed investor, uint amount);
     event FundsInvested(uint256 amount);
     event CouponPaid(address indexed investor, uint256 amount, uint quarter);
-    event TriggerActivated(uint256 windspeed);
+    event TriggerActivated(uint256 windspeed, uint256 oracleTs);
     event YieldInvestmentSold(uint256 proceeds);
     event ContractMatured(uint256 totalPayout);
+    event OracleUpdated(address indexed oracle, uint256 maxAge);
 
     constructor(
         address payable _owner,
+        address oracleAddr,
+        uint256 _maxDataAgeSeconds,
         uint _minimumAmount,
         uint _bondPrice,
         uint _maxBonds,
@@ -91,6 +136,11 @@ contract InsuranceFundraising {
         riskPremiumRate = _riskPremiumBasisPoints;
         yieldToken = new MockYieldToken();
 
+        oracle = IWindOracle(oracleAddr);
+        maxDataAgeSeconds = _maxDataAgeSeconds;
+        yieldToken = new MockYieldToken();
+
+        emit OracleUpdated(oracleAddr, _maxDataAgeSeconds);
         emit FundraisingStarted(owner, totalMinimumGoal, startTime, fundraisingDeadline);
     }
 
@@ -111,6 +161,15 @@ contract InsuranceFundraising {
     }
 
     // --------------------------------------------
+    // ADMIN
+    // --------------------------------------------
+    function setOracle(address oracleAddr, uint256 _maxDataAgeSeconds) external onlyOwner {
+        oracle = IWindOracle(oracleAddr);
+        maxDataAgeSeconds = _maxDataAgeSeconds;
+        emit OracleUpdated(oracleAddr, _maxDataAgeSeconds);
+    }
+
+    // --------------------------------------------
     // FUNDRAISING
     // --------------------------------------------
     function buyBonds(uint _amount) external payable fundraisingActive {
@@ -125,7 +184,7 @@ contract InsuranceFundraising {
 
         bondsSold += _amount;
 
-        require(bondsSold + _amount <= maxBonds, "Maximum amount of bonds that can be sold exceeded after purchase.")     
+        require(bondsSold + _amount <= maxBonds, "Maximum amount of bonds that can be sold exceeded after purchase.");     
 
         bondHolders[msg.sender] += _amount;
 
@@ -197,10 +256,15 @@ contract InsuranceFundraising {
     // --------------------------------------------
     // PARAMETRIC TRIGGER (e.g. windspeed)
     // --------------------------------------------
-    function checkTrigger(uint windspeed) external {
-        if (windspeed >= triggerThreshold && !triggerActivated) {
+    function checkTrigger() external {
+        require(!triggerActivated, "already");
+        uint256 wind = oracle.lastReading();
+        uint256 ts   = oracle.lastUpdatedAt();
+        require(ts != 0 && block.timestamp - ts <= maxDataAgeSeconds, "stale oracle");
+
+        if (wind >= triggerThreshold) {
             triggerActivated = true;
-            emit TriggerActivated(windspeed);
+            emit TriggerActivated(wind, ts);
             sellYieldInvestment();
         }
     }
@@ -269,6 +333,8 @@ contract CatBondFactory {
     address[] public bonds; // index = bondId
 
     function createBond(
+        address oracleAddr,
+        uint256 maxDataAgeSeconds,
         uint256 _minimumAmount,
         uint256 _bondPrice,
         uint256 _maxBonds,
@@ -281,6 +347,8 @@ contract CatBondFactory {
         // Deployer (msg.sender) will be the owner inside InsuranceFundraising constructor
         InsuranceFundraising bond = new InsuranceFundraising(
             payable(msg.sender),
+            oracleAddr,
+            maxDataAgeSeconds,
             _minimumAmount,
             _bondPrice,
             _maxBonds,

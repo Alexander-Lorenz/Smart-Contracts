@@ -1,0 +1,199 @@
+{
+	"compiler": {
+		"version": "0.8.30+commit.73712a01"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "bondId",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "issuer",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "bondAddress",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "createdAt",
+						"type": "uint256"
+					}
+				],
+				"name": "BondCreated",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "bondId",
+						"type": "uint256"
+					}
+				],
+				"name": "bondAt",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "bonds",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "bondsCount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "oracleAddr",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxDataAgeSeconds",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_minimumAmount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_bondPrice",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_maxBonds",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_fundraisingDays",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_totalMinimumGoal",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_triggerThreshold",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_yieldRateBasisPoints",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_riskPremiumBasisPoints",
+						"type": "uint256"
+					}
+				],
+				"name": "createBond",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "bondId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "bondAddress",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"title": "CatBondFactory",
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"notice": "Deploys new InsuranceFundraising instances and indexes them.",
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"Fundraising_Coupon_Core.sol": "CatBondFactory"
+		},
+		"evmVersion": "prague",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"Fundraising_Coupon_Core.sol": {
+			"keccak256": "0x8138a42684c91b2f54b0b5e264c0dc8561c63d3f1e8ac1435be24a90bd0708c1",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://d980e686912a37121e20c2a427bf3d32055b6fc66d8e7182f065028c8582b8bd",
+				"dweb:/ipfs/QmUTYjTyiQWLFBBmL16wQXfRcf3J5iNgSd2CZj4ixK6QJF"
+			]
+		}
+	},
+	"version": 1
+}
