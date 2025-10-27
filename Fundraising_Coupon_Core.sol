@@ -124,6 +124,9 @@ contract InsuranceFundraising {
         }
 
         bondsSold += _amount;
+
+        require(bondsSold + _amount <= maxBonds, "Maximum amount of bonds that can be sold exceeded after purchase.")     
+
         bondHolders[msg.sender] += _amount;
 
         emit BondPurchased(msg.sender, _amount);
