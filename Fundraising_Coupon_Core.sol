@@ -144,7 +144,7 @@ contract InsuranceFundraising {
     // --------------------------------------------
     // INVESTMENT INTO YIELD TOKEN
     // --------------------------------------------
-    function investInYieldToken() external onlyOwner fundraisingClosed {
+    function investInYieldToken() external onlyOwner fundraisingClosed {    //sollte hier nicht fundraisingEnded stehen, weil wir haebn mit closed nichts definiert oder???
         require(!fundsInvested, "Already invested");
         require(bondsSold >= totalMinimumGoal, "Goal not met");
         uint256 amountToInvest = address(this).balance;
