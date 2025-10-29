@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+
+// for educational purposes only! Do not use real funds!
+
 pragma solidity ^0.8.9;
 
 // ------------------------------------
