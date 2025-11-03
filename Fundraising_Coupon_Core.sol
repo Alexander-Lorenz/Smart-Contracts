@@ -26,43 +26,20 @@ contract MockYieldToken {
     }
 }
 
-
-/* -----------------------------------------------------------
- *                         Oracle
- * ----------------------------------------------------------- */
+// ------------------------------------
+// Wind Oracle Interface
+// ------------------------------------
 interface IWindOracle {
-    function lastReading() external view returns (uint256);
-    function lastUpdatedAt() external view returns (uint256);
-}
-
-contract SimpleWindOracle is IWindOracle {
-    address public owner;
-    uint256 public override lastReading;
-    uint256 public override lastUpdatedAt;
-
-    event Updated(uint256 reading, uint256 timestamp);
-    event OwnerChanged(address indexed prev, address indexed next);
-
-    constructor(address _owner) {
-        owner = _owner;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "not owner");
-        _;
-    }
-
-    function setReading(uint256 reading) external onlyOwner {
-        lastReading = reading;
-        lastUpdatedAt = block.timestamp;
-        emit Updated(reading, block.timestamp);
-    }
-
-    function setOwner(address next) external onlyOwner {
-        require(next != address(0), "zero");
-        emit OwnerChanged(owner, next);
-        owner = next;
-    }
+    function getWind(bytes32 locationId)
+        external
+        view
+        returns (
+            uint64 speedX100,     // m/s * 100
+            uint64 gustX100,      // m/s * 100
+            int16  directionDeg,  // 0..359 or -1
+            uint64 updatedAt,     // unix epoch
+            address updater
+        );
 }
 
 // ------------------------------------
@@ -78,7 +55,7 @@ contract InsuranceFundraising {
     uint public bondsSold;
     uint public fundraisingDeadline;
 
-    uint public triggerThreshold;        // e.g. windspeed in km/h
+    uint public triggerThreshold;        // windspeed in m/s * 100
     bool public triggerActivated = false;
     bool public fundsInvested = false;
     bool public contractEnded = false;
@@ -86,6 +63,7 @@ contract InsuranceFundraising {
     // Oracle wiring
     IWindOracle public oracle;
     uint256 public maxDataAgeSeconds; // e.g., 30 minutes
+    bytes32 public locationId;
 
     // Configurable parameters
     uint public yieldRate;               // e.g. 200 = 2.00% per quarter (basis points)
@@ -113,6 +91,7 @@ contract InsuranceFundraising {
     event YieldInvestmentSold(uint256 proceeds);
     event ContractMatured(uint256 totalPayout);
     event OracleUpdated(address indexed oracle, uint256 maxAge);
+    event RefundClaimed(address indexed investor, uint256 bonds, uint256 amount);
 
     constructor(
         address payable _owner,
@@ -125,7 +104,8 @@ contract InsuranceFundraising {
         uint _totalMinimumGoal,
         uint _triggerThreshold,
         uint _yieldRateBasisPoints,     // yield per quarter in basis points (e.g., 200 = 2%)
-        uint _riskPremiumBasisPoints    // risk premium per quarter (e.g., 150 = 1.5%)
+        uint _riskPremiumBasisPoints,    // risk premium per quarter (e.g., 150 = 1.5%)
+        bytes32 _locationId
     ) {
         owner = _owner;
         startTime = block.timestamp;
@@ -138,10 +118,9 @@ contract InsuranceFundraising {
         yieldRate = _yieldRateBasisPoints;
         riskPremiumRate = _riskPremiumBasisPoints;
         yieldToken = new MockYieldToken();
-
         oracle = IWindOracle(oracleAddr);
         maxDataAgeSeconds = _maxDataAgeSeconds;
-        yieldToken = new MockYieldToken();
+        locationId = _locationId; 
 
         emit OracleUpdated(oracleAddr, _maxDataAgeSeconds);
         emit FundraisingStarted(owner, totalMinimumGoal, startTime, fundraisingDeadline);
@@ -183,13 +162,11 @@ contract InsuranceFundraising {
 
         if (bondHolders[msg.sender] == 0) {
             investors.push(msg.sender);
-        }
-
-        bondsSold += _amount;
-
-        require(bondsSold + _amount <= maxBonds, "Maximum amount of bonds that can be sold exceeded after purchase.");     
+        }   
 
         bondHolders[msg.sender] += _amount;
+
+        bondsSold += _amount;
 
         emit BondPurchased(msg.sender, _amount);
     }
@@ -261,15 +238,15 @@ contract InsuranceFundraising {
     // --------------------------------------------
     function checkTrigger() external {
         require(!triggerActivated, "already");
-        uint256 wind = oracle.lastReading();
-        uint256 ts   = oracle.lastUpdatedAt();
+
+        (uint64 speedX100,, , uint64 ts, ) = oracle.getWind(locationId);
         require(ts != 0 && block.timestamp - ts <= maxDataAgeSeconds, "stale oracle");
 
-        if (wind >= triggerThreshold) {
+        if (speedX100 >= triggerThreshold) {
             triggerActivated = true;
-            emit TriggerActivated(wind, ts);
+            emit TriggerActivated(speedX100, ts);
             sellYieldInvestment();
-        }
+            }
     }
 
     // --------------------------------------------
@@ -315,6 +292,21 @@ contract InsuranceFundraising {
         emit ContractMatured(principal);
     }
 
+    function claimRefund() external {
+        require(block.timestamp >= fundraisingDeadline, "Fundraising still active");
+        require(bondsSold < totalMinimumGoal, "Goal met; no refunds");
+        uint256 bonds = bondHolders[msg.sender];
+        require(bonds > 0, "Nothing to refund");
+
+        uint256 amount = bonds * bondPrice;
+        bondHolders[msg.sender] = 0;
+
+        (bool ok, ) = payable(msg.sender).call{value: amount}("");
+        require(ok, "Refund transfer failed");
+
+        emit RefundClaimed(msg.sender, bonds, amount);
+    }
+
     receive() external payable {}
 }
 
@@ -345,7 +337,8 @@ contract CatBondFactory {
         uint256 _totalMinimumGoal,
         uint256 _triggerThreshold,
         uint256 _yieldRateBasisPoints,
-        uint256 _riskPremiumBasisPoints
+        uint256 _riskPremiumBasisPoints,
+        bytes32 _locationId
     ) external returns (uint256 bondId, address bondAddress) {
         // Deployer (msg.sender) will be the owner inside InsuranceFundraising constructor
         InsuranceFundraising bond = new InsuranceFundraising(
@@ -359,7 +352,8 @@ contract CatBondFactory {
             _totalMinimumGoal,
             _triggerThreshold,
             _yieldRateBasisPoints,
-            _riskPremiumBasisPoints
+            _riskPremiumBasisPoints,
+            _locationId
         );
 
         bonds.push(address(bond));
