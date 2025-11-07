@@ -7,6 +7,21 @@ pragma solidity ^0.8.24;
 /// - speedX100, gustX100: meters/second * 100 (e.g., 12.34 m/s -> 1234)
 /// - directionDeg: degrees [0..359], use -1 if unknown.
 /// Timestamps are block.timestamp of the write.
+
+
+// Minimal interface so the oracle can call the bond
+interface IOraclePushReceiver {
+    function oraclePushWind(
+        bytes32 locationId,
+        uint64 speedX100,
+        uint64 gustX100,
+        int16  directionDeg,
+        uint64 updatedAt,
+        address updater
+    ) external;
+}
+
+
 contract WindOracle {
     struct WindReading {
         uint64 speedX100;      // m/s * 100
@@ -64,22 +79,50 @@ contract WindOracle {
     /// @param speedX100 m/s * 100
     /// @param gustX100  m/s * 100
     /// @param directionDeg degrees [0..359], or -1 if unknown
-    function setWind(
-        bytes32 locationId,
-        uint64 speedX100,
-        uint64 gustX100,
-        int16 directionDeg
-    ) external onlyUpdater {
-        WindReading memory wr = WindReading({
-            speedX100: speedX100,
-            gustX100:  gustX100,
-            directionDeg: directionDeg,
-            updatedAt: uint64(block.timestamp),
-            updater: msg.sender
-        });
-        _readings[locationId] = wr;
-        emit WindSet(locationId, speedX100, gustX100, directionDeg, wr.updatedAt, msg.sender);
-    }
+// Add this inside WindOracle
+
+function _setWind(
+    bytes32 locationId,
+    uint64 speedX100,
+    uint64 gustX100,
+    int16  directionDeg
+) internal {
+    WindReading memory wr = WindReading({
+        speedX100: speedX100,
+        gustX100:  gustX100,
+        directionDeg: directionDeg,
+        updatedAt: uint64(block.timestamp),
+        updater: msg.sender
+    });
+    _readings[locationId] = wr;
+    emit WindSet(locationId, speedX100, gustX100, directionDeg, wr.updatedAt, msg.sender);
+}
+
+function setWind(
+    bytes32 locationId,
+    uint64 speedX100,
+    uint64 gustX100,
+    int16  directionDeg
+) external onlyUpdater {
+    _setWind(locationId, speedX100, gustX100, directionDeg);
+}
+
+// keep your interface IOraclePushReceiver as shown earlier
+function setWindAndPush(
+    bytes32 locationId,
+    uint64 speedX100,
+    uint64 gustX100,
+    int16  directionDeg,
+    address bond
+) external onlyUpdater {
+    _setWind(locationId, speedX100, gustX100, directionDeg);
+    WindReading memory wr = _readings[locationId];
+    IOraclePushReceiver(bond).oraclePushWind(
+        locationId, wr.speedX100, wr.gustX100, wr.directionDeg, wr.updatedAt, wr.updater
+    );
+}
+
+
 
     /// @notice Get the latest reading for a location.
     function getWind(bytes32 locationId)
@@ -90,4 +133,24 @@ contract WindOracle {
         WindReading memory wr = _readings[locationId];
         return (wr.speedX100, wr.gustX100, wr.directionDeg, wr.updatedAt, wr.updater);
     }
+
+    event WindPushed(address indexed bond, bytes32 indexed locationId, uint64 updatedAt);
+
+/// @notice Read the stored wind reading and push it to a CatBond.
+/// @dev Uses the current on-chain snapshot; does NOT fetch from the web.
+///      Gated by onlyUpdater to avoid spam; the bond also checks msg.sender==oracle.
+function getWindAndPush(address bond, bytes32 locationId) external onlyUpdater {
+    WindReading memory wr = _readings[locationId];
+    require(wr.updatedAt != 0, "no data");
+    IOraclePushReceiver(bond).oraclePushWind(
+        locationId,
+        wr.speedX100,
+        wr.gustX100,
+        wr.directionDeg,
+        wr.updatedAt,
+        wr.updater
+    );
+    emit WindPushed(bond, locationId, wr.updatedAt);
+}
+
 }
