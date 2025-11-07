@@ -12,7 +12,7 @@ from retry_requests import retry
 # --------- EDIT THESE 5 LINES ----------
 RPC_URL          = "https://eth-sepolia.g.alchemy.com/v2/mwpVrmlu9WlaldA0Vt2FK"
 ORACLE_PRIVKEY   = "dd5af2a6301e0ed42ebcfb318831a0fa37055ca130db035918f4ca86e77672d5"        # reporter wallet (has Sepolia ETH)
-CONTRACT_ADDRESS = "0xc925596EA20Dcc833C5d90f4855813D2Bc7F31EF"    # contract that has checkTrigger(uint)
+CONTRACT_ADDRESS = "0x255f5DAfa391820559E77869CCe96c373483D8c5"    # contract that has checkTrigger(uint)
 LAT, LON         = 25.7743, -80.1937            # location to check (Miami example)
 TIMEZONE         = "America/New_York"           # or "auto"
 THRESH_KMH       = 100                          # optional local pre-check (set None to always call)
