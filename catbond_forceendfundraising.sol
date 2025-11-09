@@ -102,6 +102,7 @@ contract InsuranceFundraising {
     event ContractMatured(uint256 totalPayout);
     event OracleUpdated(address indexed oracle, uint256 maxAge);
     event RefundClaimed(address indexed investor, uint256 bonds, uint256 amount);
+    event ForcedMaturity(uint256 principalBurned, uint256 totalPayout);
 
     constructor(
         address payable _owner,
@@ -388,6 +389,47 @@ function triggerInfo()
 {
     return (triggerActivated, lastTriggerSpeedX100, lastTriggerTs, triggerThreshold);
 }
+
+event ForcedMaturity(uint256 principalBurned, uint256 totalPayout);
+
+/// @notice Emergency / test helper: end the contract now and distribute available ETH pro-rata.
+/// @dev Burns all MockYieldToken and pays out up to the contract's ETH balance.
+///      If ETH < token "principal", payout is capped to available ETH (no revert).
+function forceMatureNow() external onlyOwner {
+    require(!contractEnded, "Already ended");
+    require(block.timestamp > fundraisingDeadline, "fundraising still active"); //brauchen wir vielleicht nicht
+    require(fundsInvested, "not invested"); //brauchen wir vielleicht nicht
+
+    // Read & burn synthetic principal
+    uint256 principal = yieldToken.balanceOf(address(this));
+    if (principal > 0) {
+        yieldToken.burn(address(this), principal);
+    }
+
+    // Payout = available ETH (capped), pro-rata by bond holdings
+    uint256 available = address(this).balance;
+    uint256 totalBonds = bondsSold;
+    uint256 totalPaid;
+
+    if (available > 0 && totalBonds > 0) {
+        for (uint i = 0; i < investors.length; i++) {
+            address investor = investors[i];
+            uint256 share = (bondHolders[investor] * available) / totalBonds;
+            if (share > 0) {
+                (bool ok, ) = payable(investor).call{value: share}("");
+                require(ok, "payout transfer failed");
+                totalPaid += share;
+            }
+        }
+    }
+
+    fundsInvested = false;
+    triggerActivated = true; // optional: mark as no further coupons
+    contractEnded = true;
+
+    emit ForcedMaturity(principal, totalPaid);
+}
+
 /* -------------------------------------------------------------------------- */
 /*                               CatBondFactory                               */
 /* -------------------------------------------------------------------------- */
