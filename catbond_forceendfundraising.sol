@@ -80,7 +80,7 @@ contract InsuranceFundraising {
     uint public riskPremiumRate;         // e.g. 150 = 1.50% per quarter (basis points)
 
     uint public constant CONTRACT_DURATION = 3 * 365 days; // 3 years
-    uint public constant QUARTER_DURATION = 90 days;
+    uint public constant QUARTER_DURATION = 25 seconds;
     uint public nextCouponTime;
     uint public totalCouponsPaid;
 
