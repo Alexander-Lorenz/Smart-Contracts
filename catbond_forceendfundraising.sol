@@ -276,6 +276,29 @@ function forceCloseFundraising(uint256 newDeadline) external onlyOwner {
             }
     }
 
+// Alternative für checktrigger, muss ich noch testen - Bo
+
+    //function checkTrigger() external {
+    // 1) Already finished or triggered? Do nothing.
+   // if (contractEnded || triggerActivated) return;
+
+    // 2) Read oracle
+    //(uint64 speedX100,, , uint64 ts, ) = oracle.getWind(locationId);
+
+    // 3) Freshness soft-guard: just ignore if stale/no data (no revert)
+    //if (ts == 0 || block.timestamp - ts > maxDataAgeSeconds) return;
+
+    // 4) Threshold not met? Do nothing.
+   // if (speedX100 < triggerThreshold) return;
+
+    // 5) Trigger, emit, liquidate
+   // triggerActivated = true;
+   // lastTriggerSpeedX100 = speedX100;
+   // lastTriggerTs = ts;
+   // emit TriggerActivated(speedX100, ts);
+   // sellYieldInvestment();
+//}
+
 /// @notice Oracle push entrypoint. Verifies freshness and triggers if threshold hit.
 /// @dev The oracle must call this (enforced by onlyOracle).
 function oraclePushWind(
@@ -358,7 +381,13 @@ function oraclePushWind(
 
     receive() external payable {}
 }
-
+function triggerInfo()
+    external
+    view
+    returns (bool activated, uint64 speedX100, uint64 ts, uint256 threshold)
+{
+    return (triggerActivated, lastTriggerSpeedX100, lastTriggerTs, triggerThreshold);
+}
 /* -------------------------------------------------------------------------- */
 /*                               CatBondFactory                               */
 /* -------------------------------------------------------------------------- */
