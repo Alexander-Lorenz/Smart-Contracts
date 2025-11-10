@@ -161,6 +161,7 @@ modifier onlyOracle() {
     // --------------------------------------------
     // ADMIN
     // --------------------------------------------
+// checken ob notwendig -Bo
     function setOracle(address oracleAddr, uint256 _maxDataAgeSeconds) external onlyOwner {
         oracle = IWindOracle(oracleAddr);
         maxDataAgeSeconds = _maxDataAgeSeconds;
